@@ -84,3 +84,5 @@ Frontend V2 TODO (tick as done):
 - [x] vite build, screenshots, zip, README
 
 V2 DONE: frontend built (tsc + vite build pass), screenshots reviewed, README/zip updated. Nothing left unless the user asks for more.
+
+V3: serverless mode for Vercel (common/runtime.ts SERVERLESS): no socket gateway/cron, photos in DB (migration 0002), lazy sweep, awaited emails; web VITE_REALTIME=off polls every 10s. Both modes pass smoke (54) and roles smoke (50).

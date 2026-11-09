@@ -1,6 +1,7 @@
 import { Body, Controller, Get, Global, Inject, Injectable, Module, Param, ParseUUIDPipe, Patch, Post } from '@nestjs/common';
 import { and, desc, eq, isNull, sql } from 'drizzle-orm';
 import { Auth, AuthUser, CurrentUser } from '../common/auth';
+import { SERVERLESS } from '../common/runtime';
 import { ScopeService } from '../common/scope.module';
 import { DB, Database } from '../db/db.module';
 import { notifications } from '../db/schema';
@@ -24,6 +25,7 @@ export class InboxService {
   async visitEvent(visit: SerializedVisit, kind: 'arrived' | 'left') {
     try {
       const chain = await this.scope.chainOf(visit.host.id);
+      const mails: Promise<void>[] = [];
       const who = visit.visitor.fullName + (visit.visitor.company ? ` (${visit.visitor.company})` : '');
       for (const person of chain) {
         const isHost = person.id === visit.host.id;
@@ -36,8 +38,9 @@ export class InboxService {
           .values({ userId: person.id, kind: `visit.${kind}`, title, body, visitId: visit.id })
           .returning();
         this.realtime.emitToUser(person.id, 'notification', row);
-        this.mail.simple(person.email, title, body);
+        mails.push(this.mail.simple(person.email, title, body));
       }
+      if (SERVERLESS) await Promise.all(mails);
     } catch {
       // Best effort by design.
     }

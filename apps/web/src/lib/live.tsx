@@ -2,17 +2,23 @@ import { useQueryClient } from '@tanstack/react-query';
 import { createContext, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { io, type Socket } from 'socket.io-client';
 import { useToast } from '@/components/toast';
-import { API_ORIGIN, tokenStore } from './api';
+import { api, API_ORIGIN, tokenStore } from './api';
 import { useAuth } from './auth';
 import type { AppNotification, RollCall, Visit } from './types';
 
+/** Hosting without WebSockets (for example Vercel functions): refresh by polling instead. */
+export const POLLING = import.meta.env.VITE_REALTIME === 'off';
+const POLL_MS = 10_000;
+
 interface LiveState {
   connected: boolean;
+  /** True when updates arrive by polling every few seconds instead of a live connection. */
+  polling: boolean;
   /** Visit ids that just changed, so rows can flash once. */
   recent: ReadonlySet<string>;
 }
 
-const LiveContext = createContext<LiveState>({ connected: false, recent: new Set() });
+const LiveContext = createContext<LiveState>({ connected: false, polling: POLLING, recent: new Set() });
 
 export function LiveProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
@@ -30,6 +36,40 @@ export function LiveProvider({ children }: { children: ReactNode }) {
     if (!userId) return;
     const token = tokenStore.get();
     if (!token) return;
+
+    if (POLLING) {
+      setConnected(true);
+      let seen: Set<string> | null = null;
+      let rollActive: boolean | null = null;
+      const tick = async () => {
+        if (document.hidden) return;
+        void qc.invalidateQueries({ queryKey: ['visits'] });
+        void qc.invalidateQueries({ queryKey: ['inside'] });
+        void qc.invalidateQueries({ queryKey: ['summary'] });
+        try {
+          if (role !== 'GUARD') {
+            const n = await qc.fetchQuery({ queryKey: ['notifications'], queryFn: () => api<{ items: AppNotification[]; unread: number }>('/notifications'), staleTime: 0 });
+            const fresh = n.items.filter((i) => !i.readAt && !seen?.has(i.id));
+            if (seen) for (const i of fresh.slice(0, 3).reverse()) toast.info(i.title);
+            seen = new Set(n.items.map((i) => i.id));
+          }
+          const roll = await qc.fetchQuery({ queryKey: ['rollcall'], queryFn: () => api<RollCall | null>('/roll-call/active'), staleTime: 0 });
+          if (rollActive === false && roll) toast.error('Emergency roll call started.');
+          rollActive = Boolean(roll);
+        } catch {
+          /* offline or signed out: the next tick tries again */
+        }
+      };
+      void tick();
+      const timer = window.setInterval(() => void tick(), POLL_MS);
+      const onFocus = () => void tick();
+      window.addEventListener('focus', onFocus);
+      return () => {
+        window.clearInterval(timer);
+        window.removeEventListener('focus', onFocus);
+        setConnected(false);
+      };
+    }
 
     const socket = io(API_ORIGIN, { auth: { token }, transports: ['websocket', 'polling'], reconnectionDelayMax: 8000 });
     socketRef.current = socket;
@@ -118,7 +158,7 @@ export function LiveProvider({ children }: { children: ReactNode }) {
     };
   }, [userId, role, qc, toast]);
 
-  const value = useMemo(() => ({ connected, recent }), [connected, recent]);
+  const value = useMemo(() => ({ connected, polling: POLLING, recent }), [connected, recent]);
   return <LiveContext.Provider value={value}>{children}</LiveContext.Provider>;
 }
 

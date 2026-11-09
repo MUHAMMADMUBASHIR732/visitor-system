@@ -15,6 +15,7 @@ import { escapeLike, normalizeIdNumber, normalizePhone } from '../common/normali
 import { DB, Database } from '../db/db.module';
 import { HOST_ROLES, users, visitors, visits, VisitStatus, VISIT_STATUSES } from '../db/schema';
 import { ScopeService } from '../common/scope.module';
+import { TasksService } from '../tasks/tasks.module';
 import { BlacklistService } from '../blacklist/blacklist.module';
 import { NotificationsService } from '../notifications/notifications.module';
 import { PassService } from '../pass/pass.module';
@@ -38,6 +39,7 @@ export class VisitsService {
     private readonly pass: PassService,
     private readonly realtime: RealtimeService,
     private readonly scope: ScopeService,
+    private readonly tasks: TasksService,
   ) {
     this.tz = config.get<string>('OFFICE_TIMEZONE') ?? 'Asia/Karachi';
     this.earlyMinutes = Number(config.get('QR_EARLY_MINUTES') ?? 60);
@@ -225,7 +227,7 @@ export class VisitsService {
       .returning({ id: visits.id });
 
     const serialized = await this.serializedById(created.id);
-    this.notifications.inviteVisitor(serialized);
+    await this.notifications.inviteVisitor(serialized);
     this.realtime.emitToGate('visit.scheduled', serialized);
     await this.audit.log(user.id, 'visit.create', 'visit', created.id, { hostId });
     return serialized;
@@ -316,13 +318,14 @@ export class VisitsService {
     const serialized = this.serialize(row);
     if (!serialized.passToken) throw new ConflictException('This visit has no active pass to send.');
     if (!serialized.visitor.email) throw new BadRequestException('Add the visitor’s email before sending the pass.');
-    this.notifications.inviteVisitor(serialized);
+    await this.notifications.inviteVisitor(serialized);
     await this.audit.log(user.id, 'visit.resend', 'visit', id);
     return { sent: true };
   }
 
   /** Counts for the dashboards. Hosts only see their own visits. */
   async summary(user: AuthUser) {
+    await this.tasks.maybeSweep();
     const scope = await this.scope.hostFilter(user);
     const result = await this.db.execute(sql`
       with bounds as (

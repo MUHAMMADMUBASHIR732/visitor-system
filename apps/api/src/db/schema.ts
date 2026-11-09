@@ -1,6 +1,7 @@
 import {
   AnyPgColumn,
   boolean,
+  customType,
   index,
   integer,
   jsonb,
@@ -34,9 +35,23 @@ export const HOST_ROLES: Role[] = ['ADMIN', 'SENIOR_MANAGER', 'MANAGER', 'HOST',
 export const MANAGER_ROLES: Role[] = ['SENIOR_MANAGER', 'MANAGER'];
 export const VISIT_STATUSES = visitStatusEnum.enumValues;
 
+const bytea = customType<{ data: Buffer; driverData: Buffer }>({
+  dataType() {
+    return 'bytea';
+  },
+});
+
 const createdAt = () => timestamp('created_at', { withTimezone: true }).notNull().defaultNow();
 
 export const badgeSeq = pgSequence('badge_seq', { startWith: 1, increment: 1 });
+
+/** Visitor photos kept in the database (used on serverless hosting where there is no disk). */
+export const photos = pgTable('photos', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  mime: text('mime').notNull(),
+  data: bytea('data').notNull(),
+  createdAt: createdAt(),
+});
 
 export const departments = pgTable('departments', {
   id: uuid('id').primaryKey().defaultRandom(),

@@ -159,7 +159,7 @@ export class GateService {
     const serialized = await this.visits.serializedById(id);
     this.realtime.emitToHost(serialized.host.id, 'visit.checked_in', serialized);
     this.realtime.emitToGate('visit.checked_in', serialized);
-    void this.inbox.visitEvent(serialized, 'arrived');
+    await this.inbox.visitEvent(serialized, 'arrived');
     await this.audit.log(user.id, 'gate.check_in', 'visit', id, { badge });
     return serialized;
   }
@@ -175,7 +175,7 @@ export class GateService {
     const serialized = await this.visits.serializedById(id);
     this.realtime.emitToHost(serialized.host.id, 'visit.checked_out', serialized);
     this.realtime.emitToGate('visit.checked_out', serialized);
-    void this.inbox.visitEvent(serialized, 'left');
+    await this.inbox.visitEvent(serialized, 'left');
     await this.audit.log(user.id, 'gate.check_out', 'visit', id);
     return serialized;
   }
@@ -203,7 +203,7 @@ export class GateService {
 
     const serialized = await this.visits.serializedById(created.id);
     this.realtime.emitToHost(dto.hostId, 'walkin.pending', serialized);
-    this.notifications.hostWalkIn(serialized);
+    await this.notifications.hostWalkIn(serialized);
     await this.audit.log(user.id, 'gate.walk_in', 'visit', created.id);
     return serialized;
   }

@@ -101,11 +101,11 @@ async function main() {
   const checkIn = await call('POST', `/gate/check-in/${visit.id}`, { token: guard, form });
   ok(checkIn.status === 201 && checkIn.data.status === 'CHECKED_IN', 'guard checks the visitor in', JSON.stringify(checkIn.data));
   ok(/^V-\d{4}$/.test(checkIn.data.badgeNumber), 'badge number assigned');
-  ok(checkIn.data.entryPhotoUrl?.startsWith('/uploads/photos/'), 'entry photo stored');
+  ok(/^\/(uploads\/photos|api\/photos)\//.test(checkIn.data.entryPhotoUrl ?? ''), 'entry photo stored');
   ok(checkIn.data.vehiclePlate === 'ABC 123', 'vehicle plate normalised');
 
   const photo = await fetch(API.replace(/\/api$/, '') + checkIn.data.entryPhotoUrl);
-  ok(photo.status === 200, 'photo is served');
+  ok(photo.status === 200 && /^image\//.test(photo.headers.get('content-type') ?? ''), 'photo is served as an image');
 
   const again = await call('POST', `/gate/check-in/${visit.id}`, { token: guard });
   ok(again.status === 409, 'double check-in is blocked');

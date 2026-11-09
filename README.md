@@ -44,17 +44,38 @@ Check the API with `npm run smoke` inside `apps/api` (54 checks), then `node scr
 **Demo logins** (password `Foyer@2026`): `admin@foyer.demo`, `senior@foyer.demo`, `manager@foyer.demo`, `host@foyer.demo`, `sana@foyer.demo`, `employee@foyer.demo`, `guard@foyer.demo`.
 **Change or delete these before real use** (Admin → Team).
 
-## Deploy (all have free tiers)
-1. **Database: Neon.** Create a project, copy the connection string.
-2. **API: Render.** New → Blueprint, pick this repo (`render.yaml`). Set `DATABASE_URL`, `CORS_ORIGIN` (your web URL), `WEB_URL`. The start command runs migrations automatically. Run `npm run db:seed` once from the Render shell, or create your own admin.
-3. **Web: Vercel or Netlify.** Root directory `apps/web`, build `npm run build`, output `dist`, env `VITE_API_URL=https://<your-api>.onrender.com`.
-4. **Email: Resend.** Create an API key, set `RESEND_API_KEY` and `MAIL_FROM` (verify your domain to send to anyone).
+## Deploy for free, no card: everything on Vercel + Neon
+Both the website and the API run as two Vercel projects from the same GitHub repo. No server and no card needed.
+
+1. **Database (Neon).** You will use two connection strings from Neon's **Connect** panel: the **direct** one for migrations (on your computer) and the **pooled** one (host contains `-pooler`) for Vercel. Remove `&channel_binding=require` from both and keep `?sslmode=require`.
+2. **Migrate once from your computer** (`apps/api/.env` holding the direct string): `npm run build && npm run db:migrate && npm run db:seed`.
+3. **API project on Vercel.** Add New Project → import the repo → click **Import single project** next to `api` (or set Root Directory to `apps/api`). Framework: NestJS (detected). Environment variables:
+
+| Name | Value |
+|---|---|
+| `DATABASE_URL` | the **pooled** Neon string |
+| `JWT_SECRET` | long random string (32+ chars) |
+| `QR_SECRET` | a different long random string |
+| `CORS_ORIGIN` | your web project URL (add after step 4, then redeploy) |
+| `WEB_URL` | same as `CORS_ORIGIN` |
+| `OFFICE_TIMEZONE` | `Asia/Karachi` |
+| `DEFAULT_COUNTRY_CODE` | `92` |
+| `RESEND_API_KEY` | optional, see email notes |
+
+   Check `https://<api-project>.vercel.app/api/health` shows `"status":"ok"`.
+4. **Web project on Vercel.** Add New Project → same repo → **Import single project** next to `web` (Root Directory `apps/web`, Framework Vite). Environment variables: `VITE_API_URL` = the API project URL (no trailing `/`, no `/api`) and `VITE_REALTIME` = `off`.
+5. Put the web URL into the API's `CORS_ORIGIN` and `WEB_URL`, then **Redeploy** the API.
+
+In this mode there is no WebSocket server, so the app refreshes itself every 10 seconds (the sidebar says "Auto" instead of "Live"). Visitor photos are stored in the database (they survive redeploys). The no-show cleanup runs when someone opens a dashboard (at most every 5 minutes). The API detects Vercel automatically (`VERCEL=1`); set `SERVERLESS=true` to force this mode elsewhere.
+
+## Deploy on a normal server (Render, Railway, a VPS)
+Use `render.yaml` (needs a card on Render). Set `DATABASE_URL`, `CORS_ORIGIN`, `WEB_URL`; the start command (`npm run start:prod`) runs migrations. Then deploy `apps/web` to Vercel/Netlify with `VITE_API_URL` only (live WebSocket updates stay on).
 
 ## Things to know
 - **Camera scanning needs HTTPS** (fine on Vercel/Netlify; on plain http use the 6-digit code).
-- **Render free sleeps** after ~15 min idle (first request is slow, and live updates and the scheduled sweeps pause). Use the ~$7/month plan for a real office.
+- **On Vercel** each request may start a cold function (a second or two), rate limits are per instance, and the free Hobby plan has usage limits. **Render free sleeps** after ~15 min idle (first request is slow, and live updates and the scheduled sweeps pause). Use the ~$7/month plan for a real office.
 - **Vercel Hobby is non-commercial.** Use Netlify, Cloudflare Pages, or a paid Vercel plan for a company.
-- **Photos** are stored on local disk (`UPLOAD_DIR`), which is wiped on redeploy on Render. For production, mount a persistent disk or move `storage` to Cloudflare R2/S3.
+- **Photos** are stored on local disk (`UPLOAD_DIR`) on a normal server (wiped on redeploy on Render; mount a disk or move `storage` to R2/S3) and in the database on Vercel.
 - WhatsApp uses a free `wa.me` share link (no paid API). Email is the only automatic notification.
 - Limits: login 10/min, API 240/min per IP.
 

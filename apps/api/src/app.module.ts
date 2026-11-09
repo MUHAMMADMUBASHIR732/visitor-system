@@ -8,6 +8,7 @@ import { AuthModule } from './auth/auth.module';
 import { BlacklistModule } from './blacklist/blacklist.module';
 import { DbModule } from './db/db.module';
 import { GateModule } from './gate/gate.module';
+import { SERVERLESS } from './common/runtime';
 import { ScopeModule } from './common/scope.module';
 import { InboxModule } from './inbox/inbox.module';
 import { HealthController } from './health.controller';
@@ -25,7 +26,7 @@ import { VisitsModule } from './visits/visits.controller';
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
     ThrottlerModule.forRoot([{ ttl: 60_000, limit: 240 }]),
-    ScheduleModule.forRoot(),
+    ...(SERVERLESS ? [] : [ScheduleModule.forRoot()]),
     DbModule,
     AuditModule,
     PassModule,

@@ -9,6 +9,7 @@ import {
 import { eq } from 'drizzle-orm';
 import type { Server, Socket } from 'socket.io';
 import { AuthModule } from '../auth/auth.module';
+import { SERVERLESS } from '../common/runtime';
 import { DB, Database } from '../db/db.module';
 import { HOST_ROLES, users } from '../db/schema';
 
@@ -70,7 +71,8 @@ export class EventsGateway implements OnGatewayInit, OnGatewayConnection {
 @Global()
 @Module({
   imports: [AuthModule],
-  providers: [RealtimeService, EventsGateway],
+  // No WebSocket server on serverless hosting; the web app polls instead.
+  providers: SERVERLESS ? [RealtimeService] : [RealtimeService, EventsGateway],
   exports: [RealtimeService],
 })
 export class RealtimeModule {}

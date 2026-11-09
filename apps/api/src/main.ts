@@ -4,6 +4,7 @@ import { NestFactory } from '@nestjs/core';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import helmet from 'helmet';
 import { AppModule } from './app.module';
+import { SERVERLESS } from './common/runtime';
 import { CorsIoAdapter } from './realtime/cors-io.adapter';
 
 function assertSecrets() {
@@ -34,11 +35,13 @@ async function bootstrap() {
   app.enableCors({ origin: origins, credentials: true });
   app.setGlobalPrefix('api');
   app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
-  app.useWebSocketAdapter(new CorsIoAdapter(app, origins));
+  if (!SERVERLESS) app.useWebSocketAdapter(new CorsIoAdapter(app, origins));
   app.enableShutdownHooks();
 
-  const uploadDir = (await import('node:path')).resolve(process.env.UPLOAD_DIR ?? './uploads');
-  app.useStaticAssets(uploadDir, { prefix: '/uploads', index: false, maxAge: '7d' });
+  if (!SERVERLESS) {
+    const uploadDir = (await import('node:path')).resolve(process.env.UPLOAD_DIR ?? './uploads');
+    app.useStaticAssets(uploadDir, { prefix: '/uploads', index: false, maxAge: '7d' });
+  }
 
   const port = Number(process.env.PORT ?? 4000);
   await app.listen(port, '0.0.0.0');

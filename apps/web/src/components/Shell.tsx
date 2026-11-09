@@ -19,14 +19,14 @@ import { Sheet } from './overlays';
 import { Avatar, Skeleton } from './ui';
 
 function LiveDot() {
-  const { connected } = useLive();
+  const { connected, polling } = useLive();
   return (
     <span
       className={clsx('inline-flex items-center gap-2 text-sm', connected ? 'text-success' : 'text-soft')}
-      title={connected ? 'Live updates are on' : 'Reconnecting to live updates'}
+      title={connected ? (polling ? 'Updates refresh every few seconds' : 'Live updates are on') : 'Reconnecting to live updates'}
     >
       <span className={clsx('size-2 rounded-full', connected ? 'animate-pulse-dot bg-success' : 'bg-line-strong')} />
-      <span className="text-soft">{connected ? 'Live' : 'Offline'}</span>
+      <span className="text-soft">{connected ? (polling ? 'Auto' : 'Live') : 'Offline'}</span>
     </span>
   );
 }

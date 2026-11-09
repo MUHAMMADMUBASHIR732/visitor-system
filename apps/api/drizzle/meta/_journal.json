@@ -15,6 +15,13 @@
       "when": 1794203768280,
       "tag": "0001_hierarchy",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1794225666644,
+      "tag": "0002_photos",
+      "breakpoints": true
     }
   ]
 }

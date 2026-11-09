@@ -2,6 +2,7 @@ import { Global, Inject, Injectable, Module, OnApplicationShutdown } from '@nest
 import { ConfigService } from '@nestjs/config';
 import { drizzle, NodePgDatabase } from 'drizzle-orm/node-postgres';
 import { Pool } from 'pg';
+import { SERVERLESS } from '../common/runtime';
 import * as schema from './schema';
 
 export const DB = Symbol('DB');
@@ -23,7 +24,12 @@ class PoolCloser implements OnApplicationShutdown {
       provide: PG_POOL,
       inject: [ConfigService],
       useFactory: (config: ConfigService) =>
-        new Pool({ connectionString: config.getOrThrow<string>('DATABASE_URL'), max: 10 }),
+        new Pool({
+          connectionString: config.getOrThrow<string>('DATABASE_URL'),
+          // Serverless: many short-lived instances, so keep each one's pool small and let it go quickly.
+          max: SERVERLESS ? 2 : 10,
+          idleTimeoutMillis: SERVERLESS ? 5_000 : 30_000,
+        }),
     },
     {
       provide: DB,

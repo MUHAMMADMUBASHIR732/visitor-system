@@ -1,6 +1,7 @@
 import { Global, Injectable, Logger, Module } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { escapeHtml } from '../common/normalize';
+import { SERVERLESS } from '../common/runtime';
 import type { SerializedVisit } from '../visits/visit.types';
 
 const COLORS = {
@@ -38,6 +39,16 @@ ${bodyHtml}${button}
 </div></body></html>`;
   }
 
+  /**
+   * On a normal server emails are fire-and-forget. A serverless function can be frozen right after it
+   * responds, so there the caller waits for the provider before replying.
+   */
+  private run(p: Promise<void>): Promise<void> {
+    if (SERVERLESS) return p;
+    void p;
+    return Promise.resolve();
+  }
+
   private async send(to: string, subject: string, html: string) {
     const key = this.config.get<string>('RESEND_API_KEY');
     if (!key) {
@@ -62,8 +73,8 @@ ${bodyHtml}${button}
   }
 
   /** Fire-and-forget: callers never wait for the email provider. */
-  inviteVisitor(visit: SerializedVisit) {
-    if (!visit.visitor.email || !visit.passToken) return;
+  inviteVisitor(visit: SerializedVisit): Promise<void> {
+    if (!visit.visitor.email || !visit.passToken) return Promise.resolve();
     const url = `${this.webUrl}/pass/${visit.passToken}`;
     const html = this.layout(
       `Your visit pass for ${visit.host.name}`,
@@ -72,31 +83,31 @@ ${bodyHtml}${button}
 <p style="margin:0 0 8px">Show the QR code on your pass at the front desk. If your phone is out of battery, give the guard this code: <strong style="letter-spacing:2px">${escapeHtml(visit.passCode ?? '')}</strong></p>`,
       { label: 'Open your pass', url },
     );
-    void this.send(visit.visitor.email, `Your visit pass for ${visit.host.name}`, html);
+    return this.run(this.send(visit.visitor.email, `Your visit pass for ${visit.host.name}`, html));
   }
 
   /** A plain notification email in the Foyer layout. */
-  simple(to: string, title: string, body: string) {
+  simple(to: string, title: string, body: string): Promise<void> {
     const html = this.layout(title, `<p style="margin:0">${escapeHtml(body)}</p>`, { label: 'Open Foyer', url: this.webUrl });
-    void this.send(to, title, html);
+    return this.run(this.send(to, title, html));
   }
 
-  hostArrival(visit: SerializedVisit) {
+  hostArrival(visit: SerializedVisit): Promise<void> {
     const html = this.layout(
       `${visit.visitor.fullName} has arrived`,
       `<p style="margin:0">${escapeHtml(visit.visitor.fullName)}${visit.visitor.company ? ` from ${escapeHtml(visit.visitor.company)}` : ''} checked in at reception for: ${escapeHtml(visit.purpose)}.</p>`,
     );
-    void this.send(visit.host.email, `${visit.visitor.fullName} has arrived`, html);
+    return this.run(this.send(visit.host.email, `${visit.visitor.fullName} has arrived`, html));
   }
 
-  hostWalkIn(visit: SerializedVisit) {
+  hostWalkIn(visit: SerializedVisit): Promise<void> {
     const html = this.layout(
       `${visit.visitor.fullName} is at reception`,
       `<p style="margin:0">${escapeHtml(visit.visitor.fullName)}${visit.visitor.company ? ` from ${escapeHtml(visit.visitor.company)}` : ''} came without an appointment: ${escapeHtml(visit.purpose)}.</p>
 <p style="margin:12px 0 0">Approve or decline the visit in Foyer.</p>`,
       { label: 'Review visit', url: `${this.webUrl}/host` },
     );
-    void this.send(visit.host.email, `${visit.visitor.fullName} is at reception`, html);
+    return this.run(this.send(visit.host.email, `${visit.visitor.fullName} is at reception`, html));
   }
 }
 

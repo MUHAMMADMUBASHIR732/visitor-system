@@ -1,6 +1,7 @@
-import { Inject, Injectable, Logger, Module } from '@nestjs/common';
+import { Global, Inject, Injectable, Logger, Module } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { and, asc, eq, inArray, lt, sql } from 'drizzle-orm';
+import { SERVERLESS } from '../common/runtime';
 import { DB, Database } from '../db/db.module';
 import { visitors, visits } from '../db/schema';
 import { RealtimeService } from '../realtime/realtime.module';
@@ -13,6 +14,19 @@ export class TasksService {
     @Inject(DB) private readonly db: Database,
     private readonly realtime: RealtimeService,
   ) {}
+
+  private lastSweep = 0;
+
+  /**
+   * Serverless hosting has no timers, so the cleanup runs when someone loads a dashboard, at most
+   * every 5 minutes per instance. Both jobs are safe to repeat.
+   */
+  async maybeSweep() {
+    if (!SERVERLESS || Date.now() - this.lastSweep < 5 * 60_000) return;
+    this.lastSweep = Date.now();
+    await this.expireUnusedPasses();
+    await this.flagOverdue();
+  }
 
   /** Passes whose window ended without a check-in become no-shows. */
   @Cron(CronExpression.EVERY_10_MINUTES)
@@ -49,5 +63,6 @@ export class TasksService {
   }
 }
 
-@Module({ providers: [TasksService] })
+@Global()
+@Module({ providers: [TasksService], exports: [TasksService] })
 export class TasksModule {}
