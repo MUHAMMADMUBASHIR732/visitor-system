@@ -1,0 +1,24 @@
+# Render Blueprint: creates the API web service. Add DATABASE_URL (Neon) and the URLs in the dashboard.
+services:
+  - type: web
+    name: foyer-api
+    runtime: node
+    rootDir: apps/api
+    buildCommand: npm ci && npm run build
+    startCommand: npm run start:prod
+    healthCheckPath: /api/health
+    envVars:
+      - key: DATABASE_URL
+        sync: false
+      - key: CORS_ORIGIN
+        sync: false
+      - key: WEB_URL
+        sync: false
+      - key: JWT_SECRET
+        generateValue: true
+      - key: QR_SECRET
+        generateValue: true
+      - key: OFFICE_TIMEZONE
+        value: Asia/Karachi
+      - key: RESEND_API_KEY
+        sync: false

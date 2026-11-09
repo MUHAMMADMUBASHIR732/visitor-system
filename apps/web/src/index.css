@@ -1,0 +1,269 @@
+@import 'tailwindcss';
+
+@custom-variant dark (&:where([data-theme='dark'], [data-theme='dark'] *));
+
+/*
+  Foyer palette (from the coffee palette the client chose)
+  Coffee Bean #2D211B  Mocha #7B5A48  Oat Milk #E7D7C2  Cream Foam #F8F1E8  Cinnamon #B9784D
+  Semantic tokens below map these to roles; dark theme re-maps them.
+*/
+:root {
+  --page: #f8f1e8;
+  --surface: #fffcf7;
+  --sunken: #f0e5d6;
+  --line: #e7d7c2;
+  --line-strong: #d6c0a2;
+  --ink: #2d211b;
+  --ink-soft: #7b5a48;
+  --accent: #b9784d;
+  --accent-ink: #2d211b;
+  --accent-text: #8c5632;
+  --accent-wash: #f2dfcd;
+  --primary: #2d211b;
+  --primary-ink: #f8f1e8;
+  --primary-hover: #43322a;
+
+  --success: #4b6a3a;
+  --success-wash: #e3ead6;
+  --warning: #9a620f;
+  --warning-wash: #f4e3bd;
+  --danger: #a33a2a;
+  --danger-wash: #f3d9d2;
+
+  --gold: #d49a52;
+  --clay: #b8604a;
+  --glow: 185 120 77;
+  --shadow-tint: 45 33 27;
+  color-scheme: light;
+}
+
+[data-theme='dark'] {
+  --page: #1c1410;
+  --surface: #2d211b;
+  --sunken: #241a15;
+  --line: #44342b;
+  --line-strong: #5a463a;
+  --ink: #f8f1e8;
+  --ink-soft: #c9b39b;
+  --accent: #c98b5f;
+  --accent-ink: #2d211b;
+  --accent-text: #e2a97f;
+  --accent-wash: #4a3226;
+  --primary: #f8f1e8;
+  --primary-ink: #2d211b;
+  --primary-hover: #e7d7c2;
+
+  --success: #a6c28f;
+  --success-wash: #2c3a24;
+  --warning: #e5b565;
+  --warning-wash: #4a3716;
+  --danger: #ec9a89;
+  --danger-wash: #4b231c;
+
+  --gold: #e3b06a;
+  --clay: #d98066;
+  --glow: 227 176 106;
+  --shadow-tint: 0 0 0;
+  color-scheme: dark;
+}
+
+@theme inline {
+  --font-display: 'Bricolage Grotesque', ui-sans-serif, system-ui, sans-serif;
+  --font-sans: 'Figtree', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+
+  --color-page: var(--page);
+  --color-surface: var(--surface);
+  --color-sunken: var(--sunken);
+  --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
+  --color-ink: var(--ink);
+  --color-soft: var(--ink-soft);
+  --color-accent: var(--accent);
+  --color-accent-ink: var(--accent-ink);
+  --color-accent-text: var(--accent-text);
+  --color-accent-wash: var(--accent-wash);
+  --color-primary: var(--primary);
+  --color-primary-ink: var(--primary-ink);
+  --color-primary-hover: var(--primary-hover);
+  --color-success: var(--success);
+  --color-success-wash: var(--success-wash);
+  --color-warning: var(--warning);
+  --color-warning-wash: var(--warning-wash);
+  --color-danger: var(--danger);
+  --color-danger-wash: var(--danger-wash);
+  --color-gold: var(--gold);
+  --color-clay: var(--clay);
+
+  --radius-card: 20px;
+  --radius-control: 12px;
+
+  --shadow-card: 0 1px 2px rgb(var(--shadow-tint) / 0.05), 0 10px 28px -14px rgb(var(--shadow-tint) / 0.16);
+  --shadow-lift: 0 2px 4px rgb(var(--shadow-tint) / 0.06), 0 18px 40px -16px rgb(var(--shadow-tint) / 0.28);
+  --shadow-glow: 0 2px 6px rgb(var(--glow) / 0.12), 0 22px 44px -18px rgb(var(--glow) / 0.55);
+  --shadow-pop: 0 24px 60px -20px rgb(var(--shadow-tint) / 0.45);
+
+  --ease-out-quint: cubic-bezier(0.22, 1, 0.36, 1);
+  --animate-swing: swing 2.6s var(--ease-out-quint) both;
+  --animate-pulse-dot: pulse-dot 2s ease-in-out infinite;
+  --animate-flash: flash 1.6s ease-out;
+  --animate-shimmer: shimmer 1.6s linear infinite;
+  --animate-rise: rise 0.45s var(--ease-out-quint) both;
+}
+
+@keyframes swing {
+  0% { transform: rotate(-9deg) translateY(-24px); opacity: 0; }
+  18% { opacity: 1; }
+  32% { transform: rotate(6deg) translateY(0); }
+  52% { transform: rotate(-3.2deg); }
+  72% { transform: rotate(1.6deg); }
+  100% { transform: rotate(0deg); }
+}
+@keyframes pulse-dot {
+  0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, currentColor 45%, transparent); }
+  50% { box-shadow: 0 0 0 6px color-mix(in srgb, currentColor 0%, transparent); }
+}
+@keyframes flash {
+  0% { background-color: var(--accent-wash); }
+  100% { background-color: transparent; }
+}
+@keyframes shimmer {
+  0% { background-position: -240px 0; }
+  100% { background-position: calc(240px + 100%) 0; }
+}
+@keyframes bar-grow {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(1); }
+}
+@keyframes scan-line {
+  0%, 100% { top: 4%; opacity: 0.2; }
+  50% { top: 96%; opacity: 1; }
+}
+@keyframes rise {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+    scroll-behavior: smooth;
+  }
+  body {
+    background: var(--page);
+    color: var(--ink);
+    font-family: var(--font-sans);
+    font-feature-settings: 'tnum' 1, 'cv11' 1;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+    min-height: 100dvh;
+    transition: background-color 0.3s ease, color 0.3s ease;
+  }
+  h1, h2, h3 {
+    font-family: var(--font-display);
+    letter-spacing: -0.02em;
+    line-height: 1.12;
+    text-wrap: balance;
+  }
+  p { text-wrap: pretty; }
+  ::selection { background: var(--accent); color: var(--accent-ink); }
+  :focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+    border-radius: 8px;
+  }
+  button, a, [role='button'] { -webkit-tap-highlight-color: transparent; }
+  button { cursor: pointer; }
+  button:disabled { cursor: not-allowed; }
+  ::-webkit-scrollbar { width: 10px; height: 10px; }
+  ::-webkit-scrollbar-thumb { background: var(--line-strong); border-radius: 999px; border: 3px solid var(--page); }
+  ::-webkit-scrollbar-track { background: transparent; }
+}
+
+@layer components {
+  /* Rows that arrive over the live connection flash once so people notice them. */
+  .row-flash { animation: var(--animate-flash); }
+
+  .skeleton {
+    background: linear-gradient(90deg, var(--sunken) 0, var(--line) 120px, var(--sunken) 240px);
+    background-size: 240px 100%;
+    animation: var(--animate-shimmer);
+    border-radius: 10px;
+  }
+
+  /* The pass sheen follows the pointer via CSS variables set from JS. */
+  .pass-sheen {
+    background: radial-gradient(420px circle at var(--mx, 50%) var(--my, 0%), rgb(255 255 255 / 0.16), transparent 55%);
+  }
+}
+
+@media print {
+  body * { visibility: hidden; }
+  .print-area, .print-area * { visibility: visible; }
+  .print-area { position: fixed; inset: 0; margin: 0; padding: 24px; background: #fff; color: #000; }
+  .no-print { display: none !important; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+
+/* ---------- V2: gradients, text effects, scroll-driven bits (no decorative shapes) ---------- */
+.text-gradient {
+  background: linear-gradient(100deg, var(--accent-text) 0%, var(--gold) 45%, var(--clay) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+.bg-grad {
+  background: linear-gradient(120deg, var(--accent) 0%, var(--gold) 55%, var(--clay) 120%);
+}
+.grad-border {
+  position: relative;
+}
+.grad-border::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(135deg, var(--accent), var(--gold), var(--clay));
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+}
+.grad-border:hover::before {
+  opacity: 1;
+}
+@keyframes caret-blink {
+  0%, 49% { opacity: 1; }
+  50%, 100% { opacity: 0; }
+}
+.caret-blink {
+  animation: caret-blink 1s steps(1) infinite;
+}
+@keyframes grad-drift {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+.grad-drift {
+  background-size: 220% 220%;
+  animation: grad-drift 16s ease-in-out infinite;
+}
+/* A page background that is only a slow-moving colour wash. */
+.wash-light {
+  background:
+    linear-gradient(180deg, var(--page) 0%, color-mix(in srgb, var(--accent-wash) 70%, var(--page)) 55%, var(--page) 100%);
+}
+@media (prefers-reduced-motion: reduce) {
+  .grad-drift, .caret-blink { animation: none; }
+}
